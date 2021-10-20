@@ -1,7 +1,10 @@
 ```
 SENTICOIN/src/
-├── data/
+│
+├── raw/
 │   ├── crypto/
+│   │   ├── cryptolist.ipynb
+│   │   │
 │   │   ├── @elonmusk/
 │   │   │   └── downloader.ipynb
 │   │   │   
@@ -31,8 +34,12 @@ SENTICOIN/src/
     │   └── VADER.ipynb
     │
     └── regression/
-    	├── split
-    	│   └── options.R
+    	├── loader/
+    	│   ├── corpus/
+    	│   │   └── ...
+    	│   │
+    	│   └── splits/
+    	│       └── options.R
     	│
-    	└── BERT_Regression.ipynb  
+    	└── BERT.ipynb  
 ```

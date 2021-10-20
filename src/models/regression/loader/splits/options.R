@@ -3,13 +3,16 @@
 #################################################################################################################################################################################################################################################################################
 
 source("./SENTICOIN/src/support/splitter.R");
+home.path = "./SENTICOIN/data/processed/models/regression/loader/splits/";
 
 #################################################################################################################################################################################################################################################################################
-## XRP <> lag.mins=60 <> test.split=0.2 <> val.split=0.1 <> FUN=default #########################################################################################################################################################################################################
+## coins=c("XRP", "ADA") <> lag.hours=1 <> test.split=0.2 <> val.split=0.1 ######################################################################################################################################################################################################
 #################################################################################################################################################################################################################################################################################
 
-tweets <- splitter(coins = c("XRP"), lag.mins = 60, test.split = 0.2, val.split = 0.1);
-write.csv(tweets$train, "./SENTICOIN/data/processed/models/regression/split/XRP_lag.mins=60_test.split=0.2_val.split=0.1_FUN=default/train.csv", row.names = FALSE);
-write.csv(tweets$test,  "./SENTICOIN/data/processed/models/regression/split/XRP_lag.mins=60_test.split=0.2_val.split=0.1_FUN=default/test.csv",  row.names = FALSE);
-write.csv(tweets$val,   "./SENTICOIN/data/processed/models/regression/split/XRP_lag.mins=60_test.split=0.2_val.split=0.1_FUN=default/val.csv",   row.names = FALSE);
-rm(splitter, tweets);
+coins=c("XRP", "ADA"); lag.hours=1; test.split=0.2; val.split=0.1; 
+split.path = paste0(home.path, "coins=", {merged = ""; for(i in coins) {merged = paste0(merged, i, "_")}; merged}, 
+                    "lag.hours=",  lag.hours, "_", "test.split=", test.split, "_", "val.split=",  val.split); rm(i, merged);
+dir.create(paste0(split.path)); 
+
+tweets <- splitter(coins = coins, lag.hours = lag.hours, test.split = test.split, val.split = val.split); rm(coins, lag.hours, test.split, val.split);
+write.csv(tweets, paste0(split.path, "/tweets.csv"), row.names = FALSE); rm(tweets, split.path);
