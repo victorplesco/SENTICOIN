@@ -25,7 +25,7 @@ splitter.get_data <- function() {
   return(tweets);
 };
 
-splitter <- function(coins = NULL, lag.hours = 1, test.split = 0.2, val.split = 0.1) {
+splitter <- function(coins = NULL, lag.hours = 1, test.split = 0.2, val.split = 0.1, poles = NULL) {
   require(dplyr); require(lubridate);
   
   # Checker for train, test and validation split proportion;
@@ -49,16 +49,16 @@ splitter <- function(coins = NULL, lag.hours = 1, test.split = 0.2, val.split = 
   } else { # Merging all prices;
     
     for(i in list.files("./SENTICOIN/data/raw/crypto/@portfolio/")) {
-      temp = read.csv(paste0("./SENTICOIN/data/raw/crypto/@portfolio/", i));
-      temp = temp %>% mutate(coin = gsub("\\..*", "", i)) %>% select(coin, time, open, close); 
-      prices = rbind(prices, temp); rm(temp);
+        temp = read.csv(paste0("./SENTICOIN/data/raw/crypto/@portfolio/", i));
+        temp = temp %>% mutate(coin = gsub("\\..*", "", i)) %>% select(coin, time, open, close); 
+        prices = rbind(prices, temp); rm(temp);
     }; rm(i);
   };
   
   # Labeling tweets with prices of a lag specified by "lag.hours";
   tweets$created_at = strptime(tweets$created_at, format = "%Y-%m-%dT%H:%M:%S.000Z", tz = "UTC");
   tweets$floor_time = as.character(floor_date(tweets$created_at, unit = "hour")); tweets$ceiling_time = ceiling_date(tweets$created_at, unit = "hour");
-  tweets$lag_time = as.character(format(as.POSIXct(tweets$created_at, format = "%Y-%m-%dT%H:%M:%S.000Z", tz = "UTC") + 60 * 60 * lag.hours, format = "%Y-%m-%d %H:00:00"));
+  tweets$lag_time   = as.character(format(as.POSIXct(tweets$created_at, format = "%Y-%m-%dT%H:%M:%S.000Z", tz = "UTC") + 60 * 60 * lag.hours, format = "%Y-%m-%d %H:00:00"));
   
   tweets = left_join(tweets, {colnames(prices)[which(colnames(prices) %in% c("open", "close"))] = c("open_floor", "close_floor"); prices}, 
                      by = c("coin" = "coin", "floor_time" = "time"));
@@ -69,28 +69,40 @@ splitter <- function(coins = NULL, lag.hours = 1, test.split = 0.2, val.split = 
   
   n.initial = nrow(tweets); tweets = na.omit(tweets);
   tweets$y = (tweets$close_lag - tweets$predicted_price)/tweets$predicted_price; 
-  tweets$y = (tweets$y - min(tweets$y)) / (max(tweets$y) - min(tweets$y));
-  tweets = tweets %>% select(coin, text, created_at, tweet_id, y); 
+  
+  if(!is.null(poles)) {
+    tweets$y_poled = tweets$y;
+    tweets$y_poled[which(tweets$y_poled <= poles[1])] = poles[1];
+    tweets$y_poled[which(tweets$y_poled >= poles[2])] = poles[2];
+    tweets = tweets %>% select(coin, text, created_at, tweet_id, y, y_poled); 
+  } else {tweets = tweets %>% select(coin, text, created_at, tweet_id, y);}; 
   
   print(paste0("Lost ", n.initial - nrow(tweets), " tweets due to lag!")); rm(n.initial);
   
   # Defining thresholds for longitudinal splitting (by days) into train, test and validation set;
-  split = strptime(c(as.character(min(tweets$created_at)), 
-                     as.character(max(tweets$created_at))), format = "%Y-%m-%d %H:%M:%S", tz = "UTC");
+  split = strptime(c(as.character(min(tweets$created_at)), as.character(max(tweets$created_at))), format = "%Y-%m-%d %H:%M:%S", tz = "UTC");
   # Define the last timestamp, starting from the last day and counting in a decreasing order, for the validation set;
   val.min  = split[2] - as.numeric(difftime(split[2], split[1], units = "hours")) * val.split * 60 * 60;
   # Define the last timestamp, starting from the last day of the validation set and counting in a decreasing order, for the test tweets;
   test.min = val.min - as.numeric(difftime(split[2], split[1], units = "hours")) * test.split * 60 * 60; # The remaining are train set;
-
+  
   tweets[which(tweets$created_at  < test.min & tweets$created_at >= split[1]), "splitter"] = "train";
   tweets[which(tweets$created_at  < val.min  & tweets$created_at > test.min),  "splitter"] = "test";
   tweets[which(tweets$created_at <= split[2] & tweets$created_at > val.min),   "splitter"] = "val";
   
-  return(tweets);
+  return(data.frame(tweets));
 };  
 
 # Example of usage: 
 # tweets <- splitter(coins = NULL, lag.hours = 1, test.split = 0.2, val.split = 0.1);
+
+# Testing "poles" as feature;
+# require(ggplot2);
+# test <- splitter(coins = NULL, lag.hours = 6, test.split = 0.2, val.split = 0.1, poles = c(-0.1, 0.1));
+# ggplot(data = test) +
+#   geom_histogram(aes(x = y_poled, y = ..density..), col = "tomato3", fill = "white", bins = 500) + 
+#   geom_density(aes(x = y, y = ..density..), col = "dodgerblue",) +
+#   theme_void();
 
 # Testing popularity duplicate exclusion ("ADA", "ETH"):
 # test = read.csv("./SENTICOIN/data/raw/twitter/@portfolio/csv/tweets.csv") %>% filter(coin == "ADA" | coin == "ETH") %>%
