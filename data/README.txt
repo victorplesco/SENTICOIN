@@ -1,8 +1,5 @@
 ``` 
-SENTICOIN/data/
-├── external/    
-│
-├── interim/       
+SENTICOIN/data/    
 │
 ├── processed/
 │   └── models/
@@ -12,12 +9,17 @@ SENTICOIN/data/
 │       │   └── VADER.csv
 │       │
 │       └── regression/ 
-│           └── split/
-│               └── XRP_lag.mins=60_test.split=0.2_val.split=0.1_FUN=default/
+│           └── loader/
+│               ├── corpus/
+│               │   └── u_tweets.csv
+│               │
+│               └── splits/
 │                   └── ...
 │
 └── raw/
     ├── twitter/
+    │   ├── cryptolist.csv
+    │   │
     │   ├── @elonmusk/
     │   │   ├── csv/
     │   │   │   └── retweets.csv 
@@ -38,7 +40,7 @@ SENTICOIN/data/
     │
     └── crypto/
         ├── @elonmusk/
-        │   └── ...
+        │   └── DOGE.csv
         │
         └── @portfolio/
             └── ...
